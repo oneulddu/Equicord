@@ -1,0 +1,320 @@
+.vc-chat-trans-modal-content {
+    padding: 1em;
+}
+
+.vc-chat-trans-modal-header {
+    place-content: center space-between;
+}
+
+.vc-chat-trans-modal-title {
+    margin: 0;
+}
+
+.vc-chat-trans-accessory {
+    color: var(--text-muted);
+    margin-top: 0.5em;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.2rem;
+    white-space: break-spaces;
+}
+
+.vc-chat-trans-accessory-compact {
+    align-items: center;
+    background: var(--background-secondary-alt);
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    display: inline-flex;
+    gap: 0.25em;
+    line-height: 1rem;
+    max-width: 100%;
+    padding: 2px 8px;
+    white-space: normal;
+}
+
+.vc-chat-trans-accessory-error {
+    color: var(--text-danger);
+}
+
+.vc-chat-trans-accessory-icon {
+    margin-right: 0.25em;
+}
+
+.vc-chat-trans-accessory-compact .vc-chat-trans-accessory-icon {
+    flex: 0 0 auto;
+    margin-right: 0;
+}
+
+.vc-chat-trans-compact-label {
+    color: var(--text-muted);
+    font-size: 0.9em;
+    font-style: normal;
+}
+
+.vc-chat-trans-secondary-text {
+    color: var(--text-muted);
+}
+
+.vc-chat-trans-dismiss {
+    all: unset;
+    cursor: pointer;
+    color: var(--text-link);
+}
+
+.vc-chat-trans-dismiss:is(:hover, :focus) {
+    text-decoration: underline;
+}
+
+.vc-chat-trans-dismiss:disabled {
+    cursor: default;
+    opacity: 0.7;
+    text-decoration: none;
+}
+
+.vc-chat-trans-auto-translate {
+    color: var(--green-360);
+}
+
+.vc-chat-trans-chat-button {
+    scale: 1.085;
+}
+
+.vc-chat-trans-chat-button-wrap {
+    display: inline-flex;
+    position: relative;
+}
+
+.vc-chat-trans-sent-auto-translate::after {
+    background: var(--brand-360);
+    border: 2px solid var(--background-primary);
+    border-radius: 50%;
+    bottom: -3px;
+    content: "";
+    height: 7px;
+    position: absolute;
+    right: -4px;
+    width: 7px;
+}
+
+.vc-chat-trans-manual-next-badge {
+    align-items: center;
+    background: var(--green-360);
+    border-radius: 6px;
+    color: var(--black-500);
+    display: inline-flex;
+    font-size: 9px;
+    font-weight: 700;
+    height: 13px;
+    justify-content: center;
+    line-height: 1;
+    min-width: 17px;
+    padding: 0 3px;
+    position: absolute;
+    right: -8px;
+    top: -7px;
+}
+
+.vc-chat-trans-replaced-indicator {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1;
+    margin-top: 0.15em;
+    opacity: 0.75;
+}
+
+.vc-chat-trans-skip-note {
+    color: var(--text-muted);
+    display: block;
+    font-size: 0.72rem;
+    font-style: italic;
+    line-height: 1.1;
+    margin-top: 0.2em;
+    opacity: 0.72;
+}
+
+.vc-chat-trans-settings-card {
+    background:
+        linear-gradient(180deg, rgb(255 255 255 / 3%), rgb(255 255 255 / 0%)),
+        color-mix(in srgb, var(--background-secondary) 94%, var(--brand-500) 6%);
+    border: 1px solid color-mix(in srgb, var(--border-subtle) 82%, var(--brand-500) 18%);
+    border-radius: 18px;
+    box-shadow: 0 16px 42px rgb(0 0 0 / 14%);
+    margin-bottom: 16px;
+    overflow: hidden;
+    padding: 18px;
+    position: relative;
+}
+
+.vc-chat-trans-settings-card::before {
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--brand-360) 72%, transparent), transparent);
+    content: "";
+    height: 1px;
+    inset: 0 18px auto;
+    opacity: 0.65;
+    position: absolute;
+}
+
+.vc-chat-trans-settings-card-hero {
+    background:
+        radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--brand-500) 24%, transparent), transparent 34%),
+        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--green-360) 16%, transparent), transparent 30%),
+        var(--background-secondary);
+    padding: 22px;
+}
+
+.vc-chat-trans-settings-card-accent {
+    border-color: color-mix(in srgb, var(--brand-360) 35%, var(--border-subtle));
+}
+
+.vc-chat-trans-settings-section-header {
+    margin-bottom: 14px;
+    max-width: 720px;
+}
+
+.vc-chat-trans-settings-eyebrow {
+    color: var(--brand-360);
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.vc-chat-trans-settings-hero-layout {
+    align-items: start;
+    display: grid;
+    gap: 16px;
+    grid-template-columns: minmax(320px, 1fr) minmax(220px, max-content);
+}
+
+.vc-chat-trans-settings-hero-title {
+    color: var(--header-primary);
+    font-size: 1.45rem;
+    letter-spacing: -0.035em;
+    line-height: 1.08;
+    margin: 0 0 10px;
+    max-width: 620px;
+    text-wrap: balance;
+}
+
+.vc-chat-trans-settings-hero-copy {
+    line-height: 1.45;
+    margin: 0;
+    max-width: 56ch;
+}
+
+.vc-chat-trans-settings-hero-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+    max-width: 360px;
+}
+
+.vc-chat-trans-settings-pill {
+    align-items: center;
+    background: color-mix(in srgb, var(--background-tertiary) 82%, transparent);
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    color: var(--text-normal);
+    display: inline-flex;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: 7px 10px;
+    white-space: nowrap;
+}
+
+.vc-chat-trans-settings-pill-good {
+    background: color-mix(in srgb, var(--green-360) 16%, var(--background-tertiary));
+    border-color: color-mix(in srgb, var(--green-360) 42%, var(--border-subtle));
+    color: var(--green-360);
+}
+
+.vc-chat-trans-settings-pill-warning {
+    background: color-mix(in srgb, var(--yellow-300) 16%, var(--background-tertiary));
+    border-color: color-mix(in srgb, var(--yellow-300) 42%, var(--border-subtle));
+    color: var(--yellow-300);
+}
+
+.vc-chat-trans-settings-target-strip {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 18px;
+}
+
+.vc-chat-trans-settings-target-strip > div {
+    background: color-mix(in srgb, var(--background-secondary-alt) 88%, transparent);
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    min-width: 0;
+    padding: 12px;
+}
+
+.vc-chat-trans-settings-target-strip strong {
+    color: var(--header-primary);
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-chat-trans-settings-mini-label {
+    color: var(--text-muted);
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.vc-chat-trans-settings-note {
+    line-height: 1.45;
+    margin-bottom: 12px;
+    max-width: 70ch;
+    text-wrap: pretty;
+}
+
+.vc-chat-trans-settings-grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin-bottom: 12px;
+}
+
+.vc-chat-trans-setting-field {
+    margin-bottom: 16px;
+}
+
+.vc-chat-trans-settings-grid .vc-chat-trans-setting-field {
+    margin-bottom: 0;
+}
+
+.vc-chat-trans-settings-button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+@media (width <= 900px) {
+    .vc-chat-trans-settings-hero-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .vc-chat-trans-settings-hero-pills {
+        justify-content: flex-start;
+        max-width: none;
+    }
+}
+
+@media (width <= 720px) {
+    .vc-chat-trans-settings-target-strip {
+        grid-template-columns: 1fr;
+    }
+}

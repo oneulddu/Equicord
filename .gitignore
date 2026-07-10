@@ -25,7 +25,9 @@ lerna-debug.log*
 *.tsbuildinfo
 
 .modules/
-src/userplugins
+src/userplugins/*
+!src/userplugins/chatTranslator/
+!src/userplugins/chatTranslator/**
 
 ExtensionCache/
 /settings
