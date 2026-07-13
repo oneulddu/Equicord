@@ -223,7 +223,7 @@ export default definePlugin({
             group: true,
             replacement: [
                 {
-                    match: /message:(\i),message:\{id:\i\}.{0,200}renderContentOnly:\i.{0,30}\}=\i;/,
+                    match: /message:(\i),message:\{id:\i\}.{0,200}?renderContentOnly:\i.{0,100}?\}=\i;/,
                     replace: "$&$1=$self.transformMessage($1);",
                 },
                 {

@@ -136,10 +136,6 @@ interface IgnoredEntityOptionState {
     options: SelectOption[];
 }
 
-const IgnoredGuildStores = [GuildStore];
-const IgnoredChannelStores = [ChannelStore, GuildChannelStore, GuildStore, UserStore];
-const IgnoredUserStores = [ChannelStore, GuildMemberStore, UserStore];
-
 function SectionCard({ children, tone }: { children: React.ReactNode; tone?: "hero" | "accent"; }) {
     return (
         <section className={cl("settings-card", tone === "hero" ? "settings-card-hero" : undefined, tone === "accent" ? "settings-card-accent" : undefined)}>
@@ -420,9 +416,9 @@ function getIgnoredEntityOptions(setting: "ignoredGuilds" | "ignoredChannels" | 
 }
 
 function getIgnoredEntityStores(setting: "ignoredGuilds" | "ignoredChannels" | "ignoredUsers") {
-    if (setting === "ignoredGuilds") return IgnoredGuildStores;
-    if (setting === "ignoredChannels") return IgnoredChannelStores;
-    return IgnoredUserStores;
+    if (setting === "ignoredGuilds") return [GuildStore];
+    if (setting === "ignoredChannels") return [ChannelStore, GuildChannelStore, GuildStore, UserStore];
+    return [ChannelStore, GuildMemberStore, UserStore];
 }
 
 function areIgnoredEntityOptionStatesEqual(previous: IgnoredEntityOptionState, next: IgnoredEntityOptionState) {
@@ -454,8 +450,9 @@ function IgnoredIdListSetting({
     const subscriptionKeys = useMemo<SettingKey[]>(() => [setting], [setting]);
     const value = settings.use(subscriptionKeys)[setting] ?? "";
     const ids = useMemo(() => value.split(",").map(id => id.trim()).filter(Boolean), [value]);
+    const stores = useMemo(() => getIgnoredEntityStores(setting), [setting]);
     const { labels, options } = useStateFromStores(
-        getIgnoredEntityStores(setting),
+        stores,
         () => ({
             labels: Object.fromEntries(ids.map(id => [id, getIgnoredEntityLabel(setting, id)])),
             options: getIgnoredEntityOptions(setting, ids, currentGuildId)
