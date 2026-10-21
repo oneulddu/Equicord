@@ -7,7 +7,7 @@
 import { isPluginEnabled } from "@api/PluginManager";
 import { settings as TranslateSettings } from "@plugins/translate/settings";
 import { Logger } from "@utils/Logger";
-import { showToast, Toasts } from "@webpack/common";
+import { showToast } from "@webpack/common";
 
 import { settings } from "./settings";
 import { isAbortError, runLimitedTranslation } from "./translationState";
@@ -89,7 +89,7 @@ export async function translateOutgoingMessage(channelId: string | undefined, co
 
     if (!shouldAutoTranslate && !shouldManualTranslate) {
         if (manualSkipReason)
-            showToast(manualSkipReason, Toasts.Type.FAILURE);
+            showToast({ text: manualSkipReason, variant: "critical" });
 
         return null;
     }
@@ -108,13 +108,13 @@ export async function translateOutgoingMessage(channelId: string | undefined, co
             return null;
 
         if (shouldManualTranslate)
-            showToast("Translated this outgoing message.", Toasts.Type.SUCCESS);
+            showToast({ text: "Translated this outgoing message.", variant: "success" });
 
         return translatedText;
     } catch (error) {
         if (isAbortError(error)) return null;
 
-        showToast(normalizeTranslationFailureReason(error), Toasts.Type.FAILURE);
+        showToast({ text: normalizeTranslationFailureReason(error), variant: "critical" });
         return null;
     } finally {
         ActiveOutgoingTranslationControllers.delete(controller);

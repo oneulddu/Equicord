@@ -21,7 +21,7 @@ import { isObject } from "@utils/misc";
 import { onlyOnce } from "@utils/onlyOnce";
 import { PluginNative } from "@utils/types";
 import { Message } from "@vencord/discord-types";
-import { ChannelStore, showToast, Toasts } from "@webpack/common";
+import { ChannelStore, showToast } from "@webpack/common";
 
 import {
     normalizeLanguageForService,
@@ -134,7 +134,7 @@ function showDedupedErrorToast(message: string) {
             recentErrorToasts.delete(key);
     }
 
-    showToast(message, Toasts.Type.FAILURE);
+    showToast({ text: message, variant: "critical" });
 }
 
 export function clearTranslationUtilityCaches() {
@@ -925,7 +925,7 @@ function fallbackToGoogle(text: string, sourceLang: string, targetLang: string, 
 }
 
 const showDeeplApiQuotaToast = onlyOnce(
-    () => showToast("Deepl API quota exceeded. Falling back to Google Translate", Toasts.Type.FAILURE)
+    () => showToast({ text: "Deepl API quota exceeded. Falling back to Google Translate", variant: "critical" })
 );
 
 async function deeplTranslate(text: string, sourceLang: string, targetLang: string, signal?: AbortSignal): Promise<TranslationValue> {

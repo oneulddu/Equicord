@@ -17,7 +17,7 @@
 */
 
 import { Message } from "@vencord/discord-types";
-import { FluxDispatcher, MessageStore, Parser, showToast, Toasts, useEffect, useMemo, UserStore, useState } from "@webpack/common";
+import { FluxDispatcher, MessageStore, Parser, showToast, useEffect, useMemo, UserStore, useState } from "@webpack/common";
 
 import {
     clearPersistentTranslationCache,
@@ -554,7 +554,7 @@ export function translateMessageManually(message: Message, content: string) {
                 if (current.cacheSignature === cacheSignature
                     && current.requestSignature === requestSignature
                     && isMessageContentCurrent(message.id, channelId, content))
-                    showToast(normalizeTranslationFailureReason(error), Toasts.Type.FAILURE);
+                    showToast({ text: normalizeTranslationFailureReason(error), variant: "critical" });
             },
             onSettled: () => TranslationLoadingSetters.get(message.id)?.(false)
         }

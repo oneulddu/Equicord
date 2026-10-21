@@ -22,7 +22,7 @@ import { FormSwitch } from "@components/FormSwitch";
 import { HeadingSecondary } from "@components/Heading";
 import { Margins } from "@utils/margins";
 import type { Channel } from "@vencord/discord-types";
-import { ChannelStore, GuildChannelStore, GuildMemberStore, GuildStore, SearchableSelect, SelectedChannelStore, SelectedGuildStore, showToast, TextInput, Toasts, useEffect, useMemo, useRef, UserStore, useState, useStateFromStores } from "@webpack/common";
+import { ChannelStore, GuildChannelStore, GuildMemberStore, GuildStore, SearchableSelect, SelectedChannelStore, SelectedGuildStore, showToast, TextInput, useEffect, useMemo, useRef, UserStore, useState, useStateFromStores } from "@webpack/common";
 
 import { normalizeLanguageForService } from "./languageOverrides";
 import {
@@ -1267,7 +1267,7 @@ function CacheSection({ settings }: { settings: PluginSettingsLike; }) {
                     variant="secondary"
                     disabled={!stats.count && !stats.expiredEntries}
                     onClick={() => void clearTranslationCache().catch(() => {
-                        showToast("Failed to clear the translation cache.", Toasts.Type.FAILURE);
+                        showToast({ text: "Failed to clear the translation cache.", variant: "critical" });
                     })}
                 >
                     Clear All Cache
