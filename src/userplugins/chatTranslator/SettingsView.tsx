@@ -19,7 +19,7 @@
 import { BaseText } from "@components/BaseText";
 import { Button } from "@components/Button";
 import { FormSwitch } from "@components/FormSwitch";
-import { HeadingSecondary } from "@components/Heading";
+import { Heading } from "@components/Heading";
 import { Margins } from "@utils/margins";
 import type { Channel } from "@vencord/discord-types";
 import { ChannelStore, GuildChannelStore, GuildMemberStore, GuildStore, SearchableSelect, SelectedChannelStore, SelectedGuildStore, showToast, TextInput, useEffect, useMemo, useRef, UserStore, useState, useStateFromStores } from "@webpack/common";
@@ -156,7 +156,7 @@ function SectionHeader({ eyebrow, title, children }: { eyebrow?: string; title: 
     return (
         <div className={cl("settings-section-header")}>
             {eyebrow && <span className={cl("settings-eyebrow")}>{eyebrow}</span>}
-            <HeadingSecondary>{title}</HeadingSecondary>
+            <Heading tag="h3">{title}</Heading>
             {children && <SectionNote>{children}</SectionNote>}
         </div>
     );
@@ -185,7 +185,7 @@ function SelectSetting({
 }) {
     return (
         <section className={cl("setting-field")}>
-            <HeadingSecondary>{title}</HeadingSecondary>
+            <Heading tag="h3">{title}</Heading>
             <SearchableSelect
                 options={options}
                 value={options.find(option => option.value === value)?.value}
@@ -213,7 +213,7 @@ function NumberSetting({
 }) {
     return (
         <section className={cl("setting-field")}>
-            <HeadingSecondary>{title}</HeadingSecondary>
+            <Heading tag="h3">{title}</Heading>
             <SectionNote>{description}</SectionNote>
             <TextInput
                 type="number"
@@ -242,9 +242,9 @@ function LanguageSelect({ settings, settingsKey, includeAuto }: { settings: Plug
 
     return (
         <section className={cl("setting-field")}>
-            <HeadingSecondary>
+            <Heading tag="h3">
                 {settings.def[settingsKey].description}
-            </HeadingSecondary>
+            </Heading>
 
             <SearchableSelect
                 options={options}
@@ -473,7 +473,7 @@ function IgnoredIdListSetting({
 
     return (
         <section className={cl("setting-field")}>
-            <HeadingSecondary>{title}</HeadingSecondary>
+            <Heading tag="h3">{title}</Heading>
             <SectionNote>{description} Current entries: {ids.length}.</SectionNote>
             {options.length > 0 && (
                 <div style={{ marginBottom: 10 }}>
@@ -562,7 +562,7 @@ function CredentialInput({
 }) {
     return (
         <section className={cl("setting-field")}>
-            <HeadingSecondary>{title}</HeadingSecondary>
+            <Heading tag="h3">{title}</Heading>
             <BaseText size="sm" color="text-muted" className={cl("settings-note")}>{description}</BaseText>
             <TextInput
                 type={type}
@@ -580,9 +580,9 @@ function ServiceSelect({ settings }: { settings: PluginSettingsLike; }) {
 
     return (
         <section className={cl("setting-field")}>
-            <HeadingSecondary>
+            <Heading tag="h3">
                 {settings.def.service.description}
-            </HeadingSecondary>
+            </Heading>
 
             <SearchableSelect
                 options={ServiceOptions}
@@ -628,7 +628,7 @@ function ServiceConfigurationSection({ settings }: { settings: PluginSettingsLik
     if (effectiveService === "deepl" || effectiveService === "deepl-pro") {
         return (
             <section className={Margins.top16}>
-                <HeadingSecondary>DeepL Configuration</HeadingSecondary>
+                <Heading tag="h3">DeepL Configuration</Heading>
                 <CredentialInput
                     title="DeepL API Key"
                     description="Used for DeepL Free or DeepL Pro requests."
@@ -642,7 +642,7 @@ function ServiceConfigurationSection({ settings }: { settings: PluginSettingsLik
 
     return (
         <section className={Margins.top16}>
-            <HeadingSecondary>Azure Translator Configuration</HeadingSecondary>
+            <Heading tag="h3">Azure Translator Configuration</Heading>
 
             <CredentialInput
                 title="Azure Translator API Key"
@@ -790,7 +790,7 @@ function DeepLUsageSection({ settings }: { settings: PluginSettingsLike; }) {
 
     return (
         <section className={Margins.top16}>
-            <HeadingSecondary>DeepL Usage</HeadingSecondary>
+            <Heading tag="h3">DeepL Usage</Heading>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 <Button
@@ -900,7 +900,7 @@ function CurrentChannelSection({ settings }: { settings: PluginSettingsLike; }) 
 
     return (
         <section>
-            <HeadingSecondary>Current Channel</HeadingSecondary>
+            <Heading tag="h3">Current Channel</Heading>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 <BaseText size="sm" color="text-default">

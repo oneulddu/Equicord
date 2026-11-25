@@ -18,7 +18,7 @@
 
 import { BaseText } from "@components/BaseText";
 import { Button } from "@components/Button";
-import { HeadingPrimary, HeadingSecondary } from "@components/Heading";
+import { Heading } from "@components/Heading";
 import { Margins } from "@utils/margins";
 import { RenderModalProps } from "@vencord/discord-types";
 import { Modal, useEffect, useRef, useState } from "@webpack/common";
@@ -43,7 +43,7 @@ function CacheSection() {
 
     return (
         <section className={Margins.top16}>
-            <HeadingSecondary>Cache</HeadingSecondary>
+            <Heading tag="h3">Cache</Heading>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 <BaseText size="sm" color="text-muted">
@@ -91,7 +91,7 @@ export function TranslateModal({ rootProps }: { rootProps: RenderModalProps; }) 
     return (
         <Modal
             {...rootProps}
-            title={<HeadingPrimary className={cl("modal-title")}>Chat Translator Quick Settings</HeadingPrimary>}
+            title={<Heading tag="h2" className={cl("modal-title")}>Chat Translator Quick Settings</Heading>}
             size="lg"
         >
             <div className={cl("modal-content")}>
