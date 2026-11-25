@@ -4,11 +4,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { BaseText } from "@components/BaseText";
 import { CodeBlock } from "@components/CodeBlock";
 import { Flex } from "@components/Flex";
-import { HeadingSecondary } from "@components/Heading";
+import { Heading } from "@components/Heading";
+import { Margins } from "@components/margins";
 import { Paragraph } from "@components/Paragraph";
+import { Text } from "@components/Text";
 import { TooltipContainer } from "@components/TooltipContainer";
 import { copyWithToast, getIntlMessage } from "@utils/discord";
 import { Logger } from "@utils/Logger";
@@ -18,12 +19,10 @@ import { findComponentByCodeLazy } from "@webpack";
 import {
     Clickable,
     ContextMenuApi,
-    createRoot,
     FluxDispatcher,
     Menu,
     Modal,
     openModal,
-    ReactDOM,
     useCallback,
     useEffect,
     useMemo,
@@ -114,30 +113,23 @@ function ColorContextMenu({ colorKeys }: { colorKeys: string[]; }) {
     );
 }
 
-function convertToHtml(component: React.ReactElement): string {
-    const container = document.createElement("div");
-    const root = createRoot(container);
-    ReactDOM.flushSync(() => root.render(component));
-    const content = container.innerHTML;
-    root.unmount();
-    return content;
-}
-
-function saveIcon(iconName: string, icon: Element | string, color: number, size: number, type: string) {
+function saveIcon(iconName: string, icon: Element, color: number, size: number, type: string) {
     const colorName = cssColors[color]?.name ?? "unknown";
     const ext = FORMAT_EXTENSIONS[type] ?? "png";
     const filename = `${iconName}-${colorName}-${size}px.${ext}`;
 
-    if (typeof icon === "string") {
-        saveFile(new File([icon], filename, { type: "text/plain" }));
-        return;
-    }
-
-    for (const el of icon.children) {
+    const svg = icon.cloneNode(true) as Element;
+    for (const el of svg.children) {
         const fill = el.getAttribute("fill");
         if (fill?.startsWith("var(")) {
             el.setAttribute("fill", getComputedStyle(icon).getPropertyValue(fill.slice(4, -1)));
         }
+    }
+    const data = new XMLSerializer().serializeToString(svg);
+
+    if (type === "image/svg+xml") {
+        saveFile(new File([data], filename, { type }));
+        return;
     }
 
     const canvas = document.createElement("canvas");
@@ -154,19 +146,13 @@ function saveIcon(iconName: string, icon: Element | string, color: number, size:
         link.href = canvas.toDataURL(type);
         link.click();
     };
-    img.src = `data:image/svg+xml;base64,${btoa(icon.outerHTML)}`;
+    img.src = `data:image/svg+xml;base64,${btoa(data)}`;
 }
 
 function OtherContextMenu({ iconName, Icon, color }: { iconName: string; Icon: Icon; color: number; }) {
-    const colorData = cssColors[color];
-
     const handleSave = (type: string) => {
-        const size = iconSizesInPx.lg;
-        const iconEl = type === "image/svg+xml"
-            ? convertToHtml(<Icon className="vc-ic-save-icon" color={colorData?.css} />)
-            : document.querySelector(".vc-ic-icon-preview .vc-ic-icon-large") as Element | null;
-
-        if (iconEl) saveIcon(iconName, iconEl, color, size, type);
+        const iconEl = document.querySelector(".vc-ic-icon-preview .vc-ic-icon-large");
+        if (iconEl) saveIcon(iconName, iconEl, color, iconSizesInPx.lg, type);
     };
 
     return (
@@ -277,15 +263,15 @@ function IconModal({ iconName, Icon, onClose, transitionState }: { iconName: str
                         ))}
                     </Flex>
                     <TooltipContainer text="Right-click icon to change">
-                        <BaseText size="sm" color="text-muted" className="vc-ic-color-label">
+                        <Text size="sm" color="text-muted" className="vc-ic-color-label">
                             {colorData?.name}
-                        </BaseText>
+                        </Text>
                     </TooltipContainer>
                 </Flex>
             </Flex>
             <div className="vc-ic-use-as">
-                <BaseText size="md" weight="semibold">Usage</BaseText>
-                <BaseText size="sm" color="text-muted">Click to copy</BaseText>
+                <Text size="md" weight="semibold">Usage</Text>
+                <Text size="sm" color="text-muted">Click to copy</Text>
             </div>
             {/* for some reason i cant make this shit codeblock full width, FF 15 */}
             <Clickable className="vc-ic-codeblock-wrapper" onClick={() => copyWithToast(findCode, "Copied!")}>
@@ -302,7 +288,7 @@ export function openIconModal(iconName: string, Icon: Icon) {
 export function SettingsAbout() {
     return (
         <>
-            <HeadingSecondary>Features</HeadingSecondary>
+            <Heading tag="h3" className={Margins.bottom8}>Features</Heading>
             <Paragraph>
                 <ul className="vc-ic-unordered-list">
                     <li>Preview icons</li>
@@ -313,7 +299,7 @@ export function SettingsAbout() {
                     <li>Search for colors by right-clicking the color name</li>
                 </ul>
             </Paragraph>
-            <HeadingSecondary>Special thanks</HeadingSecondary>
+            <Heading tag="h3" className={Margins.bottom8}>Special thanks</Heading>
             <Paragraph>
                 <ul className="vc-ic-unordered-list">
                     <li>krystalskullofficial._.</li>

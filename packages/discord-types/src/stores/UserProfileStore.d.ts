@@ -1,5 +1,5 @@
-import { FluxStore, Guild, User, Application, ApplicationInstallParams, ProfileEffect } from "..";
 import { ApplicationFlags, ApplicationIntegrationType } from "../../enums";
+import { Application, ApplicationInstallParams, FluxStore, Guild, ProfileEffect,User } from "..";
 
 export interface MutualFriend {
     /**
@@ -122,6 +122,7 @@ export class UserProfileStore extends FluxStore {
      * @returns an array of mutual friends, or undefined if the user has no mutual friends
      */
     getMutualFriends(userId: string): MutualFriend[] | undefined;
+    getProfileReadStateSectionAckedAt(userId: string, section: string): number | null;
     /**
      * Get the count of mutual friends for a user.
      *

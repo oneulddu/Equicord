@@ -4,22 +4,15 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { DataStore } from "@api/index";
+import { isPluginEnabled } from "@api/PluginManager";
 import { definePluginSettings } from "@api/Settings";
+import { Button } from "@components/Button";
+import showMeYourName from "@plugins/showMeYourName";
 import { EquicordDevs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
-import { SoundboardSound } from "@vencord/discord-types";
-import { ChannelStore, FluxDispatcher, GuildMemberStore, showToast, SoundboardStore, StreamerModeStore, UserStore, VoiceStateStore } from "@webpack/common";
-
-interface ChannelState {
-    userId: string;
-    channelId: string;
-    deaf: boolean;
-    mute: boolean;
-    stream: boolean;
-    selfDeaf: boolean;
-    selfMute: boolean;
-    selfStream: boolean;
-}
+import { SoundboardSound, VoiceState } from "@vencord/discord-types";
+import { ChannelStore, FluxDispatcher, GuildMemberStore, GuildStore, RelationshipStore, showToast, SoundboardStore, StreamerModeStore, UserStore, VoiceStateStore } from "@webpack/common";
 
 interface SoundboardSoundPayload {
     sound_id: string;
@@ -31,12 +24,25 @@ interface SoundboardSoundPayload {
     available: boolean;
 }
 
+const openConfig = () => {
+    if (ws?.readyState !== WebSocket.OPEN) {
+        showToast({ text: "Not connected to Orbolay", variant: "critical" });
+        return;
+    }
+
+    ws.send(JSON.stringify({ cmd: "OPEN_CONFIG" }));
+};
+
 const settings = definePluginSettings({
     port: {
         type: OptionType.NUMBER,
         description: "Port to connect to",
         default: 6888,
         restartNeeded: true
+    },
+    openConfig: {
+        type: OptionType.COMPONENT,
+        component: () => <Button onClick={openConfig}>Open Orbolay settings</Button>
     },
 });
 
@@ -53,6 +59,7 @@ let ws: WebSocket | null = null;
 let currentChannel: string | null = null;
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
 let stopped = false;
+let voiceChatEnabled = false;
 
 const waitForPopulate = async fn => {
     while (true) {
@@ -62,27 +69,39 @@ const waitForPopulate = async fn => {
     }
 };
 
-const waitForUserData = async (guildId: string, userId: string) => {
-    const isKnown = () =>
-        !!GuildMemberStore.getNick(guildId, userId) ||
-        !!UserStore?.getUser(userId)?.globalName;
+const smynInVoice = () => isPluginEnabled(showMeYourName.name) && showMeYourName.settings.store.voiceChannels;
 
+const usernameFor = (guildId: string, userId: string) => {
+    const showFriendName = !guildId
+        || smynInVoice() && !showMeYourName.settings.store.friendNameOnlyInDirectMessages;
+
+    return (showFriendName && RelationshipStore.getNickname(userId)) ||
+        GuildMemberStore.getNick(guildId, userId) ||
+        UserStore?.getUser(userId)?.globalName ||
+        UserStore?.getUser(userId)?.username;
+};
+
+const customNameFor = async (guildId: string, userId: string) => {
+    if (!guildId || !smynInVoice() || showMeYourName.settings.store.customNameOnlyInDirectMessages) return;
+
+    return (await DataStore.get<Record<string, string>>("SMYNCustomNicknames"))?.[userId];
+};
+
+const waitForUserData = async (guildId: string, userId: string) => {
     const deadline = Date.now() + 3000;
-    while (!isKnown() && Date.now() < deadline) {
+    while (!usernameFor(guildId, userId) && Date.now() < deadline) {
         await new Promise(r => setTimeout(r, 100));
     }
 };
 
-const stateToPayload = async (guildId: string, state: ChannelState) => {
+const stateToPayload = async (guildId: string, state: VoiceState) => {
     await waitForUserData(guildId, state.userId);
 
     return {
         userId: state.userId,
-        username:
-            GuildMemberStore.getNick(guildId, state.userId) ||
-            UserStore?.getUser(state.userId)?.globalName,
+        username: await customNameFor(guildId, state.userId) || usernameFor(guildId, state.userId),
         avatarUrl: UserStore?.getUser(state.userId)?.avatar,
-        channelId: state.channelId,
+        channelId: state.channelId ?? null,
         deaf: state.deaf || state.selfDeaf,
         mute: state.mute || state.selfMute,
         streaming: state.selfStream,
@@ -181,6 +200,9 @@ const incoming = payload => {
 
             break;
         }
+        case "SET_VOICE_CHANNEL_CHAT":
+            voiceChatEnabled = payload.enabled === true;
+            break;
     }
 };
 
@@ -213,10 +235,10 @@ const handleMessageNotification = dispatch => {
 };
 
 const handleVoiceStateUpdates = async dispatch => {
-    const { id } = UserStore.getCurrentUser();
+    const userId = UserStore.getCurrentUser()?.id;
 
     for (const state of dispatch.voiceStates) {
-        const ourState = state.userId === id;
+        const ourState = state.userId === userId;
         const { guildId } = state;
 
         if (ourState) {
@@ -230,7 +252,7 @@ const handleVoiceStateUpdates = async dispatch => {
                         cmd: "CHANNEL_JOINED",
                         states:
                             await Promise.all(
-                                Object.values(voiceStates).map(s => stateToPayload(guildId, s as ChannelState))
+                                Object.values(voiceStates).map(s => stateToPayload(guildId, s as VoiceState))
                             ),
                     })
                 );
@@ -261,11 +283,43 @@ const handleVoiceStateUpdates = async dispatch => {
             ws?.send(
                 JSON.stringify({
                     cmd: "VOICE_STATE_UPDATE",
-                    state: await stateToPayload(guildId, state as ChannelState),
+                    state: await stateToPayload(guildId, state as VoiceState),
                 })
             );
         }
     }
+};
+
+const handleMessageCreate = async ({ channelId, message }) => {
+    if (!voiceChatEnabled || !currentChannel || channelId !== currentChannel || !message?.guild_id) return;
+    if (StreamerModeStore.enabled) return;
+
+    const { author } = message;
+    const nick = await customNameFor(message.guild_id, author.id) || usernameFor(message.guild_id, author.id);
+
+    ws?.send(
+        JSON.stringify({
+            cmd: "VOICE_CHANNEL_MESSAGE",
+            channel_id: channelId,
+            channel_name: ChannelStore.getChannel(channelId)?.name ?? null,
+            guild_name: GuildStore.getGuild(message.guild_id)?.name ?? null,
+            message: {
+                id: message.id,
+                type: message.type,
+                guild_id: message.guild_id,
+                content: message.content,
+                nick: nick ?? null,
+                blocked: RelationshipStore.isBlockedOrIgnored(author.id),
+                author: {
+                    id: author.id,
+                    username: author.username,
+                    global_name: author.global_name ?? author.globalName ?? null,
+                    avatar: author.avatar ?? null,
+                },
+                mentions: (message.mentions ?? []).map(m => ({ id: m.id, username: m.username, global_name: m.global_name ?? m.globalName ?? null })),
+            },
+        })
+    );
 };
 
 const handleStreamerMode = dispatch => {
@@ -279,6 +333,7 @@ const handleStreamerMode = dispatch => {
 
 const createWebsocket = () => {
     console.log("Attempting to connect to Orbolay server");
+    voiceChatEnabled = false;
     if (ws?.close) ws.close();
 
     ws = new WebSocket("ws://127.0.0.1:" + settings.store.port);
@@ -296,6 +351,11 @@ const createWebsocket = () => {
     };
     ws.onclose = () => {
         ws = null;
+
+        if (!stopped) {
+            if (retryTimer) clearTimeout(retryTimer);
+            retryTimer = setTimeout(createWebsocket, 5000);
+        }
     };
     ws.onopen = async () => {
         showToast({ text: "Connected to Orbolay server", variant: "success" });
@@ -328,7 +388,7 @@ const createWebsocket = () => {
                 cmd: "CHANNEL_JOINED",
                 states:
                     await Promise.all(
-                        Object.values(channelState).map(s => stateToPayload(guildId, s as ChannelState))
+                        Object.values(channelState).map(s => stateToPayload(guildId, s as VoiceState))
                     ),
             })
         );
@@ -350,6 +410,7 @@ export default definePlugin({
         VOICE_STATE_UPDATES: handleVoiceStateUpdates,
         RPC_NOTIFICATION_CREATE: handleMessageNotification,
         STREAMER_MODE: handleStreamerMode,
+        MESSAGE_CREATE: handleMessageCreate,
     },
 
     start() {

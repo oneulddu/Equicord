@@ -1,9 +1,9 @@
-import { AvatarDecorationData, Channel, Guild, GuildMember, Message, User } from ".";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { LiteralUnion } from "type-fest";
 
-import type { FluxEvents } from "./fluxEvents";
 import { ApplicationCommandOptionType, ChannelType, PremiumType } from "../enums";
+import { AvatarDecorationData, Channel, Guild, GuildMember, Message, User } from ".";
+import type { FluxEvents } from "./fluxEvents";
 
 export { FluxEvents };
 
@@ -108,7 +108,7 @@ interface RestRequestData {
     retries?: number;
 }
 
-export type RestAPI = Record<"del" | "get" | "patch" | "post" | "put", (data: RestRequestData) => Promise<any>>;
+export type RestAPI = Record<"del" | "get" | "patch" | "post" | "put", (data: RestRequestData | string) => Promise<any>>;
 
 export type Permissions = "CREATE_INSTANT_INVITE"
     | "KICK_MEMBERS"
@@ -165,10 +165,6 @@ export type Permissions = "CREATE_INSTANT_INVITE"
 
 export type PermissionsBits = Record<Permissions, bigint>;
 
-export interface MessageSnapshot {
-    message: Message;
-}
-
 export interface Locale {
     name: string;
     value: string;
@@ -191,8 +187,8 @@ export interface Clipboard {
 export interface NavigationRouter {
     back(): void;
     forward(): void;
-    transitionTo(path: string, ...args: unknown[]): void;
-    transitionToGuild(guildId: string, ...args: unknown[]): void;
+    transitionTo(path: string, extra?: Record<string, unknown>): void;
+    transitionToGuild(guildId: string, channelId?: string, messageId?: string, extra?: Record<string, unknown>): void;
 }
 
 export interface ChannelRouter {
@@ -245,7 +241,10 @@ export interface IconUtils {
 }
 
 export interface Constants {
-    Endpoints: Record<string, any>;
+    // hack: static endpoints with no arguments are strings, ones with arguments are functions returning strings
+    // We just type them as both at once, it's up to the caller to use them correctly.
+    // Otherwise callers have to cast the endpoint to the correct type manually or we have to individually type each endpoint
+    Endpoints: Record<string, string & ((...args: string[]) => string)>;
     UserFlags: Record<string, number>;
     FriendsSections: Record<string, string>;
 }
@@ -459,3 +458,33 @@ export interface OpenUserProfileModalOptions {
 }
 
 export type OpenUserProfileModal = (opts: OpenUserProfileModalOptions) => Promise<void>;
+
+export type NoticeColorKey = "DEFAULT" | "NEUTRAL" | "BRAND" | "WARNING" | "DANGER" | "INFO" | "STREAMER_MODE" | "CUSTOM" | "SPOTIFY" | "PREMIUM_TIER_0" | "PREMIUM_TIER_1" | "PREMIUM_TIER_2";
+export type NoticeColors = Record<NoticeColorKey, string>;
+
+export interface Notice {
+    id: string;
+    /** This is always "VencordNotice" */
+    type: string;
+    message: ReactNode;
+    /** import NoticeColors from the Notices API */
+    color?: string;
+    /** Text to display on the notice button. Defaults to "Dismiss" */
+    buttonText?: ReactNode;
+    /**
+     * Callback for when the button is clicked. Not called when the notice is dismissed via the close button.
+     *
+     * Defaults to dismissing the notice
+     */
+    callback?(event: MouseEvent<HTMLButtonElement>): void;
+}
+
+export type NoticeOptions = Omit<Notice, "id" | "type" | "callback"> & {
+    id?: string;
+    /**
+     * Callback for when the button is clicked. Not called when the notice is dismissed via the close button.
+     *
+     * Defaults to dismissing the notice
+     */
+    callback?(data: { event: MouseEvent<HTMLButtonElement>; dismiss(): Promise<void>; }): void;
+};

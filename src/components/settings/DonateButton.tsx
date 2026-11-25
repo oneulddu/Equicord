@@ -16,25 +16,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { Button } from "@components/Button";
+import { Button, ButtonProps } from "@components/Button";
 import { Heart } from "@components/Heart";
 import { OpenExternalIcon } from "@components/Icons";
 import { openInviteModal } from "@utils/discord";
-import { ButtonProps } from "@vencord/discord-types";
 import { showToast } from "@webpack/common";
 
 export function DonateButton({
     equicord = false,
     className,
+    variant = "none",
     ...props
 }: Partial<ButtonProps> & { equicord?: boolean; }) {
     const link = equicord ? "https://github.com/sponsors/thororen1234" : "https://github.com/sponsors/Vendicated";
     return (
         <Button
-            {...props}
-            variant="none"
             size="medium"
             type="button"
+            variant={variant}
+            {...props}
             onClick={() => VencordNative.native.openExternal(link)}
             className={className || "vc-donate-button"}
         >
@@ -46,14 +46,15 @@ export function DonateButton({
 
 export function InviteButton({
     className,
+    variant = "none",
     ...props
 }: Partial<ButtonProps>) {
     return (
         <Button
-            {...props}
-            variant="none"
             size="medium"
             type="button"
+            variant={variant}
+            {...props}
             onClick={async e => {
                 e.preventDefault();
                 openInviteModal("wKgT9j2xfN").catch(() =>
@@ -70,15 +71,16 @@ export function InviteButton({
 
 export function TranslateButton({
     className,
+    variant = "none",
     ...props
 }: Partial<ButtonProps>) {
     const link = "https://weblate.equicord.org/projects/equicord/";
     return (
         <Button
-            {...props}
-            variant="none"
             size="medium"
             type="button"
+            variant={variant}
+            {...props}
             onClick={() => VencordNative.native.openExternal(link)}
             className={className || "vc-translate-button"}
         >

@@ -16,7 +16,7 @@ import { Devs, EquicordDevs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
 import { StandingState } from "@vencord/discord-types/enums";
 import { findByCodeLazy } from "@webpack";
-import { ApplicationCommandIndexStore, Menu, React, SafetyHubStore, SettingsRouter, UserGuildSettingsStore, UserStore, useStateFromStores, VoiceStateStore } from "@webpack/common";
+import { ApplicationCommandIndexStore, Constants, ExpressionPickerStore, Menu, React, RestAPI, SafetyHubStore, SettingsRouter, UserGuildSettingsStore, UserStore, useStateFromStores, VoiceStateStore } from "@webpack/common";
 import { ComponentType } from "react";
 
 migratePluginSettings("EquiTweaks", "EquicordHelper");
@@ -24,6 +24,7 @@ migratePluginToSettings(true, "EquiTweaks", "NoBulletPoints", "noBulletPoints");
 migratePluginToSettings(true, "EquiTweaks", "NoModalAnimation", "noModalAnimation");
 migratePluginToSettings(true, "EquiTweaks", "GuildTagSettings", "disableAdoptTagPrompt");
 migratePluginToSettings(true, "EquiTweaks", "ShowAllBadges", "showAllBadges");
+migratePluginToSettings(true, "EquiTweaks", "GifPickerTyping", "gifPickerTyping");
 
 const fetchSafetyHub: () => Promise<void> = findByCodeLazy("SAFETY_HUB_FETCH_START");
 
@@ -165,9 +166,21 @@ const settings = definePluginSettings({
         restartNeeded: true,
         default: false,
     },
+    removeChannelSuggestions: {
+        type: OptionType.BOOLEAN,
+        description: "Removes the Suggested channels category from the server sidebar",
+        restartNeeded: true,
+        default: false,
+    },
     showAllBadges: {
         type: OptionType.BOOLEAN,
         description: "Shows every profile badge instead of collapsing the rest behind +n",
+        restartNeeded: true,
+        default: false,
+    },
+    gifPickerTyping: {
+        type: OptionType.BOOLEAN,
+        description: "Shows you as typing while the GIF picker is open",
         restartNeeded: true,
         default: false,
     },
@@ -192,10 +205,10 @@ export default definePlugin({
     dependencies: ["CommandsAPI", "HeaderBarAPI"],
     authors: [
         Devs.thororen,
-        EquicordDevs.nyx,
+        Devs.nyx,
         EquicordDevs.Naibuu,
         EquicordDevs.keircn,
-        EquicordDevs.SerStars,
+        Devs.SerStars,
         EquicordDevs.mart,
         EquicordDevs.omaw,
         Devs.Samwich,
@@ -203,7 +216,9 @@ export default definePlugin({
         EquicordDevs.auggeeo,
         EquicordDevs.secp192k1,
         EquicordDevs.tie,
-        EquicordDevs.itzmeshadow999
+        EquicordDevs.itzmeshadow999,
+        EquicordDevs.luqenov,
+        EquicordDevs.lethied
     ],
     settings,
     contextMenus: {
@@ -330,7 +345,7 @@ export default definePlugin({
             predicate: () => settings.store.jsonGateway
         },
         {
-            find: "DirectMessage: getSpringConfigs()",
+            find: "getRecipientId()):null;",
             replacement: [
                 {
                     match: /("data-drop-hovering".{0,100}selected:(?:\i|!0),upperBadge:)(\i)(?=,lowerBadge:\i)/g,
@@ -362,6 +377,14 @@ export default definePlugin({
                 replace: ",enabled:!1"
             },
             predicate: () => settings.store.noOnboarding
+        },
+        {
+            find: '"placeholder-channel-id"',
+            replacement: {
+                match: /let\{selectedChannel:\i,activeJoinedRelevantThreads:\i\}.{0,30}\.GUILD_DIRECTORY\|\|/,
+                replace: "return false;$&"
+            },
+            predicate: () => settings.store.removeChannelSuggestions
         },
         {
             find: "UserProfileBadgeListRows",
@@ -396,6 +419,14 @@ export default definePlugin({
                 replace: 'autoCorrect:this.props.autoCorrect??"off"'
             },
             predicate: () => settings.store.enableAutoCorrect
+        },
+        {
+            find: "renderHeaderContent()",
+            replacement: {
+                match: /(?<=function \i\(\i\)\{let\{ref:\i,\.\.\.\i\}=\i;)(?=\i\.useEffect\(\(\)=>\(\i\.persistSearch)/,
+                replace: "$self.useGifPickerTyping();"
+            },
+            predicate: () => settings.store.gifPickerTyping
         }
     ],
     commands: [
@@ -443,6 +474,19 @@ export default definePlugin({
     useAutoCorrect() {
         const { autoCorrect } = settings.use(["autoCorrect"]);
         return autoCorrect ? "on" : "off";
+    },
+    useGifPickerTyping() {
+        const channelId = ExpressionPickerStore.useExpressionPickerStore(state => state.activeChannelId);
+
+        React.useEffect(() => {
+            if (!channelId) return;
+
+            const type = () => RestAPI.post({ url: Constants.Endpoints.TYPING(channelId) });
+            type();
+
+            const interval = setInterval(type, 8000);
+            return () => clearInterval(interval);
+        }, [channelId]);
     },
     getPlatformUrl(platform, args) {
         switch (platform) {

@@ -14,15 +14,14 @@ import { Heading } from "@components/Heading";
 import { Devs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
-import { findLazy, findStoreLazy, mapMangledModuleLazy } from "@webpack";
-import { React, showToast, TextInput } from "@webpack/common";
+import { findLazy, mapMangledModuleLazy } from "@webpack";
+import { React, showToast, SoundpackStore, TextInput } from "@webpack/common";
 
 import { getAllAudio, getAudioDataURI } from "./audioStore";
 import { SoundOverrideComponent } from "./SoundOverrideComponent";
 import { makeEmptyOverride, SoundOverride, soundTypes } from "./types";
 
 const Soundpacks: Record<string, string> = findLazy(m => m.WINTER_HOLIDAY === "winter_holiday");
-const SoundpackStore = findStoreLazy("SoundpackStore");
 const { getSoundpackMap } = mapMangledModuleLazy('message1:"bit_message1"', {
     getSoundpackMap: m => typeof m === "function"
 });
@@ -176,7 +175,7 @@ export async function debugCustomSounds() {
     let enabledCount = 0;
     let totalSettingsSize = 0;
 
-    for (const [soundId, storedValue] of Object.entries(settings.store)) {
+    for (const soundId of Object.keys(settings.store)) {
         if (soundId === "overrides" || soundId === "soundpack") continue;
 
         const override = getOverride(soundId);

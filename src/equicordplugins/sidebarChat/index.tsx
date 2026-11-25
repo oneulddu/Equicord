@@ -84,7 +84,7 @@ const ChatClasses = findCssClassesLazy("threadSidebarOpen", "loader");
 
 const requireForumView = extractAndLoadChunksLazy(
     ["Missing channel in Channel.renderHeaderToolbar"],
-    /Promise\.all\(\[((?:\i\.e\("\d+"\),?)+)\]\)\.then\(\i\.bind\(\i,(\d+)\)\)[^}]{0,100}?name:"ForumChannel"/
+    /Promise\.all\(\[((?:\i\.e\("?\d+"?\),?)+)\]\)\.then\(\i\.bind\(\i,(\d+)\)\)[^}]{0,100}?name:"ForumChannel"/
 );
 
 function getChannelTitle(channel: Channel | null | undefined) {
@@ -336,11 +336,11 @@ export default definePlugin({
             group: true,
             replacement: [
                 {
-                    match: /truncateTop\(\i\)\{(?=.{0,100}?this\._array\.length-\i;return)/,
+                    match: /truncateTop\(\i\)\{/,
                     replace: "$&if($self.hasMultipleChatViews(this.channelId))return this;"
                 },
                 {
-                    match: /truncateBottom\(\i\)\{(?=.{0,100}?return this\._array\.length<=\i\?this:this\.mutate\()/,
+                    match: /truncateBottom\(\i\)\{/,
                     replace: "$&if($self.hasMultipleChatViews(this.channelId))return this;"
                 }
             ]
@@ -484,8 +484,6 @@ export default definePlugin({
 });
 
 const Header = ({ guild, channel }: { guild: Guild; channel: Channel; }) => {
-    const recipientId = channel.isPrivate() ? channel.getRecipientId() as string : null;
-
     const name = useStateFromStores([UserStore, RelationshipStore], () => getChannelTitle(channel), [channel.id, channel.name]);
 
     const parentChannel = useStateFromStores(

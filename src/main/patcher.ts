@@ -87,7 +87,7 @@ if (!IS_VANILLA) {
                 return;
             }
 
-            const { frameless, mainWindowFrameless, nativeTitleBar, disableMinSize, transparent, macosVibrancyStyle, windowsMaterial } = settings;
+            const { frameless, mainWindowFrameless, nativeTitleBar, disableMinSize, noRoundCorners, transparent, macosVibrancyStyle, windowsMaterial } = settings;
 
             const original = options.webPreferences.preload;
             const isMainWindow = options.title === "Discord";
@@ -105,6 +105,10 @@ if (!IS_VANILLA) {
             if (disableMinSize) {
                 options.minWidth = 0;
                 options.minHeight = 0;
+            }
+
+            if (noRoundCorners) {
+                options.roundedCorners = false;
             }
 
             if (transparent) {
@@ -151,6 +155,10 @@ if (!IS_VANILLA) {
 
     process.env.DATA_DIR = join(app.getPath("userData"), "..", "Equicord");
     if (settings.plugins?.NoTrack?.disableStackDumping !== false) process.env.ELECTRON_ENABLE_STACK_DUMPING = "true";
+
+    if (settings.disableBackgroundOptimization !== false) {
+        app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
+    }
 } else {
     console.log("[Equicord] Running in vanilla mode. Not loading Equicord");
 }

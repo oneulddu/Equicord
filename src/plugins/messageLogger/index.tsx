@@ -15,7 +15,7 @@ import { isPluginEnabled } from "@api/PluginManager";
 import { definePluginSettings } from "@api/Settings";
 import { disableStyle, enableStyle } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
-import { EyeIcon } from "@components/Icons";
+import { EyeIcon, HistoryIcon } from "@components/Icons";
 import { Devs, EQUIBOT_USER_ID, EquicordDevs, SUPPORT_CHANNEL_ID, VC_SUPPORT_CATEGORY_ID, VENBOT_USER_ID } from "@utils/constants";
 import { getIntlMessage } from "@utils/discord";
 import { Logger } from "@utils/Logger";
@@ -48,44 +48,6 @@ interface MLAttachment extends MessageAttachment {
 
 const MessageClasses = findCssClassesLazy("edited", "communicationDisabled", "isSystemMessage");
 
-function ClearHistoryIcon({ height = 24, width = 24, className }: { height?: number | string; width?: number | string; className?: string; }) {
-    return (
-        <svg
-            className={className}
-            width={width}
-            height={height}
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-        >
-            <path
-                d="M5.63606 18.3639C9.15077 21.8786 14.8493 21.8786 18.364 18.3639C21.8787 14.8492 21.8787 9.1507 18.364 5.63598C14.8493 2.12126 9.15077 2.12126 5.63606 5.63598C3.87757 7.39447 2.99889 9.6996 3.00002 12.0044L3 13.9999"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ fill: "none" }}
-            />
-            <path
-                d="M1 11.9999L3 13.9999L5 11.9999"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ fill: "none" }}
-            />
-            <path
-                d="M11 7.99994L11 12.9999L16 12.9999"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ fill: "none" }}
-            />
-        </svg>
-    );
-}
-
 // track messages where the user disabled diffs for this session
 const disabledDiffMessages = new Set<string>();
 
@@ -103,6 +65,19 @@ function addDeleteStyle() {
         enableStyle(overlayStyle);
     }
 }
+
+const buttonsToRemove = [
+    "edit",
+    "reply",
+    "forward",
+    "thread",
+    "pin",
+    "delete",
+    "mark-unread",
+    "apps",
+    "bookmark",
+    "reminder"
+];
 
 /**
  * Clears a message's history (edit + attachments)
@@ -138,13 +113,19 @@ function doesMessageHaveHistory(message: MLMessage): boolean {
 const REMOVE_HISTORY_ID = "ml-remove-history";
 const TOGGLE_DELETE_STYLE_ID = "ml-toggle-style";
 const TOGGLE_DIFF_VIEW_ID = "ml-toggle-diff";
-const patchMessageContextMenu: NavContextMenuPatchCallback = (
-    children,
-    props,
-) => {
-    const { message } = props;
+const patchMessageContextMenu: NavContextMenuPatchCallback = (children, { message }) => {
     const { deleted, id, channel_id } = message;
     if (!doesMessageHaveHistory(message)) return;
+
+    if (deleted) {
+        for (const id of buttonsToRemove) {
+            const group = findGroupChildrenByChildId(id, children);
+            if (group) {
+                const index = group.findIndex(c => c?.props?.id === id);
+                group.splice(index, 1);
+            }
+        }
+    }
 
     toggle: {
         if (!deleted) break toggle;
@@ -201,7 +182,7 @@ const patchMessageContextMenu: NavContextMenuPatchCallback = (
             id={REMOVE_HISTORY_ID}
             key={REMOVE_HISTORY_ID}
             label={label}
-            leadingAccessory={{ type: "icon", icon: ClearHistoryIcon }}
+            leadingAccessory={{ type: "icon", icon: HistoryIcon }}
             color="danger"
             action={() => {
                 clearMessageHistory(message);
@@ -503,7 +484,7 @@ export default definePlugin({
     },
 
     messagePopoverButton: {
-        icon: ClearHistoryIcon,
+        icon: HistoryIcon,
         render(message) {
             const current = MessageStore.getMessage(message.channel_id, message.id) as MLMessage | undefined;
 
@@ -512,7 +493,7 @@ export default definePlugin({
 
             return {
                 label: "Clear history",
-                icon: ClearHistoryIcon,
+                icon: HistoryIcon,
                 onClick: () => {
                     const latest = MessageStore.getMessage(message.channel_id, message.id) as MLMessage | undefined;
                     if (!latest) return;
@@ -785,6 +766,22 @@ export default definePlugin({
         ]]
     }),
 
+    /**
+     * Get the reaction target for a reaction command like `+:emoji:`
+     *
+     * in the case of something like
+     * >actual message
+     * >deleted message
+     * >chatbox
+     * discord would grab and try to react to the deleted message
+     *
+     * https://github.com/Vendicated/Vencord/issues/4063
+     */
+    getReactionTarget(channelId: string) {
+        const msgs = MessageStore.getMessages(channelId)._array;
+        return msgs.findLast(msg => !msg.deleted);
+    },
+
     patches: [
         {
             find: '"MessageStore"',
@@ -972,6 +969,14 @@ export default definePlugin({
             replacement: {
                 match: /receiveMessage\((\i)\)\{/,
                 replace: "$& $self.normalizeNonce($1);"
+            }
+        },
+        {
+            find: "anyScopeRegex(/^\\+:(.+?): *$/)",
+            replacement: {
+                match: /(?<=anyScopeRegex\(\/\^\\\+:\(\.\+\?\): \*\$\/\),action\(\i,\i\)\{.{10,80}?\i=)\i\.\i\.getMessages\((\i\.id)\)\.last\(\)/,
+                replace: "$self.getReactionTarget($1)"
+
             }
         }
     ]

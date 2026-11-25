@@ -19,10 +19,10 @@ import { openContributorModal, openPluginModal, SettingsTab, wrapTab } from "@co
 import { QuickAction, QuickActionCard } from "@components/settings/QuickAction";
 import { SpecialCard } from "@components/settings/SpecialCard";
 import BadgeAPI from "@plugins/_api/badges";
+import NoTrack from "@plugins/_core/noTrack";
 import SettingsPlugin from "@plugins/_core/settings";
 import { gitRemote } from "@shared/vencordUserAgent";
 import { DONOR_ROLE_ID, GUILD_ID, IS_WINDOWS, VC_DONOR_ROLE_ID, VC_GUILD_ID } from "@utils/constants";
-import { classNameFactory } from "@utils/css";
 import { Margins } from "@utils/margins";
 import { isAnyPluginDev } from "@utils/misc";
 import { relaunch } from "@utils/native";
@@ -32,31 +32,49 @@ import { GuildMemberStore, React, useMemo, UserStore } from "@webpack/common";
 import { DonateButtonComponent } from "./DonateButton";
 import { MacOSVibrancySettings } from "./MacVibrancySettings";
 import { NotificationSection } from "./NotificationSettings";
+import { openPlayground } from "./playground";
 import { WindowsMaterialSettings } from "./WindowsMaterialSettings";
 
 const DEFAULT_DONATE_IMAGE = "https://cdn.discordapp.com/emojis/1026533090627174460.png";
 const SHIGGY_DONATE_IMAGE = "https://equicord.org/assets/favicon.png";
 
 const VENNIE_DONATOR_IMAGE = "https://cdn.discordapp.com/emojis/1238120638020063377.png";
+const EQUICORD_DONOR_IMAGE = "https://cdn.discordapp.com/emojis/1026533090627174460.png";
 const COZY_CONTRIB_IMAGE = "https://cdn.discordapp.com/emojis/1026533070955872337.png";
 
 const DONOR_BACKGROUND_IMAGE = "https://media.discordapp.net/stickers/1311070116305436712.png?size=2048";
 const CONTRIB_BACKGROUND_IMAGE = "https://media.discordapp.net/stickers/1311070166481895484.png?size=2048";
-
-const cl = classNameFactory("vc-vencord-tab-");
 
 type KeysOfType<Object, Type> = {
     [K in keyof Object]: Object[K] extends Type ? K : never;
 }[keyof Object];
 
 function Switches() {
-    const settings = useSettings(["useQuickCss", "enableReactDevtools", "mainWindowFrameless", "frameless", "nativeTitleBar", "transparent", "winCtrlQ", "disableMinSize"]);
+    const settings = useSettings(["useQuickCss", "disableBackgroundOptimization", "enableReactDevtools", "mainWindowFrameless", "frameless", "nativeTitleBar", "noRoundCorners", "transparent", "winCtrlQ", "disableMinSize"]);
+    const { disableAnalytics } = NoTrack.settings.use(["disableAnalytics"]);
 
     const Switches = [
         {
             key: "useQuickCss",
             title: "Enable Custom CSS",
             description: "Apply your configured QuickCSS"
+        },
+        {
+            value: disableAnalytics,
+            updateSetting(newValue) {
+                NoTrack.settings.store.disableAnalytics = newValue;
+            },
+            reactKey: "NoTrack::disableAnalytics",
+            key: null!,
+            title: "Block Discord Analytics",
+            description: NoTrack.settings.def.disableAnalytics.description,
+            restartRequired: NoTrack.settings.def.disableAnalytics.restartNeeded,
+        },
+        IS_DISCORD_DESKTOP && {
+            key: "disableBackgroundOptimization",
+            title: "Disable Background Optimization",
+            description: "Keeps the app window updating even when it is not fully focused. Solves Discord unloading / disconnecting",
+            restartRequired: true
         },
         (!IS_WEB && !IS_DISCORD_DESKTOP || !IS_WINDOWS) && {
             key: "mainWindowFrameless",
@@ -78,6 +96,12 @@ function Switches() {
                 restartRequired: true,
             }
         ),
+        IS_DISCORD_DESKTOP && {
+            key: "noRoundCorners",
+            title: "Disable Rounded Window Corners",
+            description: "Makes the corners of the Discord window squared instead of rounded.",
+            restartRequired: true
+        },
         !IS_WEB && {
             key: "transparent",
             title: "Enable Window Transparency",
@@ -107,10 +131,13 @@ function Switches() {
         },
     ] satisfies Array<false | {
         key: KeysOfType<typeof settings, boolean>;
+        reactKey?: string;
         title: string;
         description?: string;
         restartRequired?: boolean;
         warning?: string;
+        updateSetting?(newValue: boolean): void;
+        value?: boolean;
     }>;
 
     return Switches.map(setting => {
@@ -118,11 +145,11 @@ function Switches() {
             return null;
         }
 
-        const { key, title, description, restartRequired, warning } = setting;
+        const { reactKey, key, value, title, description, restartRequired, warning, updateSetting = v => (settings[key] = v) } = setting;
 
         return (
             <FormSwitch
-                key={key}
+                key={reactKey ?? key}
                 title={title}
                 description={
                     warning ? (
@@ -136,10 +163,10 @@ function Switches() {
                         description
                     )
                 }
-                value={settings[key]}
+                value={value ?? settings[key]}
                 hideBorder
                 onChange={v => {
-                    settings[key] = v;
+                    updateSetting(v);
 
                     if (restartRequired) {
                         promptToRestart("relaunch");
@@ -162,6 +189,7 @@ function EquicordSettings() {
         <SettingsTab>
             {(isEquicordDonor(user?.id) || isVencordDonor(user?.id)) ? (
                 <SpecialCard
+                    className={isEquicordDonor(user?.id) && !isVencordDonor(user?.id) ? "vc-special-card-dark" : ""}
                     title="Donations"
                     subtitle="Thank you for donating!"
                     description={
@@ -171,19 +199,20 @@ function EquicordSettings() {
                                 ? "All Vencord users can see your badge! You can manage your perks by messaging @vending.machine."
                                 : "All Equicord users can see your badge! You can manage your perks by making a ticket in Equicord's server."
                     }
-                    cardImage={VENNIE_DONATOR_IMAGE}
+                    cardImage={isEquicordDonor(user?.id) && !isVencordDonor(user?.id) ? EQUICORD_DONOR_IMAGE : VENNIE_DONATOR_IMAGE}
                     backgroundImage={DONOR_BACKGROUND_IMAGE}
-                    backgroundColor="#ED87A9"
+                    backgroundColor={isEquicordDonor(user?.id) && !isVencordDonor(user?.id) ? "#232428" : "#ED87A9"}
                 >
                     <DonateButtonComponent donated={true} />
                 </SpecialCard>
             ) : (
                 <SpecialCard
+                    className="vc-special-card-dark"
                     title="Support the Project"
                     description="Please consider supporting the development of Equicord by donating!"
                     cardImage={donateImage}
                     backgroundImage={DONOR_BACKGROUND_IMAGE}
-                    backgroundColor="#c3a3ce"
+                    backgroundColor="#232428"
                 >
                     <DonateButtonComponent />
                 </SpecialCard>
@@ -249,6 +278,11 @@ function EquicordSettings() {
                         )
                     }
                 />
+                {IS_DEV && <QuickAction
+                    Icon={PaintbrushIcon}
+                    text="Open Component Playground"
+                    action={() => openPlayground()}
+                />}
             </QuickActionCard>
 
             <Divider className={Margins.top20} />

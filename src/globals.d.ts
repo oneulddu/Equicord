@@ -46,6 +46,7 @@ declare global {
     export var IS_EQUIBOP: boolean;
     export var VERSION: string;
     export var BUILD_TIMESTAMP: number;
+    export var DESKTOP_MONACO_EDITOR_URL: string;
 
     export var VencordNative: typeof import("./VencordNative").default;
     export var Vencord: typeof import("./Vencord");
@@ -65,7 +66,9 @@ declare global {
     export var VesktopNative: any;
     export var unsafeWindow: any;
 
-    interface Window extends Record<PropertyKey, any> { }
+    interface Window extends Record<PropertyKey, any> {
+        launchQueue?: LaunchQueue;
+    }
 
     interface MediaTrackConstraintSet {
         restrictOwnAudio?: boolean;
@@ -88,6 +91,14 @@ declare global {
         monitorTypeSurfaces?: "include" | "exclude";
         controller?: CaptureController;
         preferCurrentTab?: boolean;
+    }
+
+    interface LaunchParams {
+        readonly targetURL?: string;
+    }
+
+    interface LaunchQueue {
+        setConsumer(consumer: (params: LaunchParams) => void): void;
     }
 }
 

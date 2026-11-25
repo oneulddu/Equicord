@@ -5,11 +5,11 @@
  */
 
 import { definePluginSettings } from "@api/Settings";
-import { BaseText } from "@components/BaseText";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { ErrorCard } from "@components/ErrorCard";
-import { HeadingPrimary, HeadingSecondary } from "@components/Heading";
+import { Heading } from "@components/Heading";
 import { Paragraph } from "@components/Paragraph";
+import { Text } from "@components/Text";
 import { Devs, IS_MAC } from "@utils/constants";
 import { Margins } from "@utils/margins";
 import definePlugin, { OptionType } from "@utils/types";
@@ -153,22 +153,22 @@ export default definePlugin({
     settingsAboutComponent: () => {
         return (
             <React.Fragment>
-                <HeadingSecondary>More Information</HeadingSecondary>
-                <BaseText size="md">
+                <Heading className={Margins.bottom8}>More Information</Heading>
+                <Text size="md">
                     You can open Discord's DevTools via {" "}
                     <div className={KbdStyles.combo} style={{ display: "inline-flex" }}>
                         <kbd className={KbdStyles.key}>{modKey}</kbd>{" "}
                         <kbd className={KbdStyles.key}>{altKey}</kbd>{" "}
                         <kbd className={KbdStyles.key}>O</kbd>{" "}
                     </div>
-                </BaseText>
+                </Text>
             </React.Fragment>
         );
     },
 
     WarningCard: ErrorBoundary.wrap(() => (
         <ErrorCard id="vc-experiments-warning-card" className={Margins.bottom16}>
-            <HeadingPrimary>Hold on!!</HeadingPrimary>
+            <Heading tag="h3" className={Margins.bottom8}>Hold on!!</Heading>
 
             <Paragraph>
                 Experiments are unreleased Discord features. They might not work, or even break your client or get your account disabled.

@@ -150,11 +150,19 @@ export default definePlugin({
             predicate: () => settings.store.disableFade
         },
         { // Disable initial and exit delay for settings menu
-            find: "headerId:void 0,headerIdIsManaged:!1",
-            replacement: {
-                match: /let (\i)=300/,
-                replace: "let $1=0"
-            },
+            find: '||"replace"===',
+            replacement: [
+                {
+                    // FIXME: Stable compat: everything, keep only 300(?=\*!\i)
+                    match: /(?:(?<=\?0:\i\.\i))|(?:300(?=\*!\i))/g,
+                    replace: "0"
+                },
+                {
+                    // FIXME: Stable compat: \i\.\i|300, keep only 300
+                    match: /(?<=setTimeout\(\(\)=>\i\(\),)\i\.\i|300(?=\))/,
+                    replace: "0"
+                }
+            ],
             predicate: () => settings.store.disableFade
         },
         { // Load menu TOC eagerly
@@ -170,7 +178,7 @@ export default definePlugin({
             predicate: () => settings.store.organizeMenu,
             replacement: [
                 {
-                    match: /children:\[(\i),null!=(\i).{0,30}\}\),(\i)\](?<=\1=(?:function|.{0,30}\.openUserSettings).+?)/, // TODO .{0,30}\.openUserSettings is stable compat
+                    match: /children:\[(\i),null!=(\i).{0,30}\}\)(?:,(\i))?\](?<=\1=(?:function|.{0,30}\.openUserSettings).+?)/, // TODO .{0,30}\.openUserSettings is stable compat
                     replace: "children:$self.transformSettingsEntries([$1,$2,$3])",
                 }
             ]

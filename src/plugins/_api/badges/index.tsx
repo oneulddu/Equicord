@@ -18,7 +18,7 @@
 
 import "./fixDiscordBadgePadding.css";
 
-import { _getBadges, BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
+import { _getBadges, BadgePosition, BadgeRarity, BadgeUserArgs, DirectoryBadge, ProfileBadge } from "@api/Badges";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { CopyIcon, LinkIcon } from "@components/Icons";
 import { openContributorModal } from "@components/settings/tabs";
@@ -31,16 +31,16 @@ import { ContextMenuApi, Menu, showToast, UserStore } from "@webpack/common";
 
 import Plugins, { PluginMeta } from "~plugins";
 
+import { BadgeDirectoryDetail } from "./BadgeDirectoryDetail";
 import { EquicordDonorModal, EquicordTranslatorModal, VencordDonorModal } from "./modals";
-
-const CONTRIBUTOR_BADGE = "https://cdn.discordapp.com/emojis/1092089799109775453.png?size=64";
-const EQUICORD_CONTRIBUTOR_BADGE = "https://equicord.org/assets/favicon.png";
-const USERPLUGIN_CONTRIBUTOR_BADGE = "https://equicord.org/assets/icons/misc/userplugin.png";
 
 const ContributorBadge: ProfileBadge = {
     id: "vencord_contributor_badge",
     description: "Vencord Contributor",
-    iconSrc: CONTRIBUTOR_BADGE,
+    infoLabel: "Vencord",
+    rarity: BadgeRarity.MYTHIC,
+    iconSrc: "https://cdn.discordapp.com/emojis/1562267648857997356.webp?size=128",
+    largeIconSrc: "https://cdn.discordapp.com/emojis/1562267648857997356.webp?size=512",
     position: BadgePosition.START,
     shouldShow: ({ userId }) => shouldShowContributorBadge(userId),
     onClick: (_, { userId }) => openContributorModal(UserStore.getUser(userId))
@@ -49,7 +49,10 @@ const ContributorBadge: ProfileBadge = {
 const EquicordContributorBadge: ProfileBadge = {
     id: "equicord_contributor_badge",
     description: "Equicord Contributor",
-    iconSrc: EQUICORD_CONTRIBUTOR_BADGE,
+    infoLabel: "Equicord",
+    rarity: BadgeRarity.MYTHIC,
+    iconSrc: "https://cdn.discordapp.com/emojis/1563740725726683167.webp?size=128",
+    largeIconSrc: "https://cdn.discordapp.com/emojis/1563740725726683167.webp?size=512",
     position: BadgePosition.START,
     shouldShow: ({ userId }) => shouldShowEquicordContributorBadge(userId),
     onClick: (_, { userId }) => openContributorModal(UserStore.getUser(userId)),
@@ -64,7 +67,10 @@ const EquicordContributorBadge: ProfileBadge = {
 const UserPluginContributorBadge: ProfileBadge = {
     id: "user_plugin_contributor_badge",
     description: "User Plugin Contributor",
-    iconSrc: USERPLUGIN_CONTRIBUTOR_BADGE,
+    infoLabel: "Equicord",
+    rarity: BadgeRarity.MYTHIC,
+    iconSrc: "https://cdn.discordapp.com/emojis/1419345679729295420.webp?size=128",
+    largeIconSrc: "https://cdn.discordapp.com/emojis/1419345679729295420.webp?size=512",
     position: BadgePosition.START,
     shouldShow: ({ userId }) => {
         if (!IS_DEV) return false;
@@ -83,8 +89,20 @@ const UserPluginContributorBadge: ProfileBadge = {
     },
 };
 
-let DonorBadges = {} as Record<string, Array<Record<"tooltip" | "badge", string>>>;
+interface DonorBadge {
+    tooltip?: string;
+    badge: string;
+    "2"?: 1;
+}
+
+let DonorBadges = {} as Record<string, Array<DonorBadge>>;
 let EquicordDonorBadges = {} as Record<string, Array<Record<"tooltip" | "badge", string>>>;
+let DirectoryBadges = {} as Record<string, DirectoryBadge>;
+let directoryState = {} as {
+    badge?: DirectoryBadge;
+    userId?: string;
+    isViewingOtherUser?: boolean;
+};
 
 async function loadBadges(url: string, noCache = false) {
     const init = {} as RequestInit;
@@ -99,9 +117,31 @@ async function loadAllBadges(noCache = false) {
 
     DonorBadges = vencordBadges;
     EquicordDonorBadges = equicordBadges;
+    DirectoryBadges = {};
 }
 
 let intervalId: any;
+
+function toDirectoryBadge(b: ProfileBadge, userId: string): DirectoryBadge {
+    const id = `vc-${userId}-${b.id}`;
+
+    return DirectoryBadges[id] ??= {
+        badge_id: id,
+        name: b.name ?? b.description ?? "",
+        description: b.detail ?? b.description ?? b.name ?? "",
+        info_label: b.infoLabel ?? "Equicord",
+        rarity: b.rarity ?? BadgeRarity.COMMON,
+        simple_icon_url: b.iconSrc!,
+        complex_icon_static_url: b.largeIconSrc ?? b.iconSrc!,
+        obtained_at: b.obtainedAt,
+        is_earnable: false,
+        owned: true,
+        hidden: false,
+        tiers: [],
+        userId,
+        originalBadgeId: b.id
+    };
+}
 
 export function BadgeContextMenu({ badge }: { badge: Omit<ProfileBadge, "id"> & BadgeUserArgs; }) {
     return (
@@ -133,7 +173,7 @@ export function BadgeContextMenu({ badge }: { badge: Omit<ProfileBadge, "id"> & 
 export default definePlugin({
     name: "BadgeAPI",
     description: "API to add badges to users",
-    authors: [Devs.Megu, Devs.Ven, Devs.TheSun],
+    authors: [Devs.Megu, Devs.Ven, Devs.TheSun, Devs.kaxtusik],
     required: true,
     patches: [
         {
@@ -157,6 +197,10 @@ export default definePlugin({
                 {
                     match: /href:(\i)\.link/,
                     replace: "...$self.getBadgeMouseEventHandlers($1),$&"
+                },
+                {
+                    match: /legacyBadgeId:(\i),userId:(\i),.{0,100}?=\i,\i=\(0,\i\.\i\)\(\1\)/,
+                    replace: "$&??$self.getDirectoryBadgeId($1,$2)"
                 }
             ]
         },
@@ -166,6 +210,30 @@ export default definePlugin({
                 match: /getBadges\(\)\{.{0,100}?return\[/,
                 replace: "$&...$self.getBadges(this),"
             }
+        },
+        {
+            find: '"BadgeDirectoryStore"',
+            replacement: {
+                match: /getBadgeById\((\i),(\i)\)\{/,
+                replace: "$&const vencordBadge=$self.getDirectoryBadge($1);if(vencordBadge)return vencordBadge;"
+            }
+        },
+        {
+            find: "badge_directory_closed",
+            replacement: [
+                {
+                    match: /(\i\.\i\.getBadges\((\i)\))(?=:\[\],\[\2\]\))/,
+                    replace: "[...$1,...$self.getDirectoryBadges($2)]"
+                },
+                {
+                    match: /(?<=\}\),)(?=null!=(\i)&&(?:\(\i\?)?\(0,\i\.jsx\)\(\i,\{badge:\1,.{0,100}?isViewingOtherUser:(\i),.{0,100}?displayedUserId:(\i))/,
+                    replace: "$self.setDirectoryBadgeState($1,$3,$2),"
+                },
+                {
+                    match: /(?<=!\i&&\i)(?=\]\}\))/,
+                    replace: ",$self.renderDirectoryBadgeContent()"
+                }
+            ]
         }
     ],
 
@@ -195,6 +263,8 @@ export default definePlugin({
 
     async stop() {
         clearInterval(intervalId);
+        DirectoryBadges = {};
+        directoryState = {};
     },
 
     getBadges(profile: { userId: string; guildId: string; }) {
@@ -208,10 +278,52 @@ export default definePlugin({
         }
     },
 
+    getDirectoryBadge(id: string) {
+        return DirectoryBadges[id];
+    },
+
+    getDirectoryBadges(userId: string) {
+        return this.getBadges({ userId, guildId: "" })
+            .filter(b => b.iconSrc)
+            .map(b => toDirectoryBadge(b, userId));
+    },
+
+    getDirectoryBadgeId(badgeId: string, userId?: string) {
+        if (!userId) return;
+
+        const badge = this.getBadges({ userId, guildId: "" })
+            .find(b => b.id === badgeId && b.iconSrc);
+
+        if (badge) return toDirectoryBadge(badge, userId).badge_id;
+    },
+
     renderBadgeComponent: ErrorBoundary.wrap((badge: ProfileBadge & BadgeUserArgs) => {
         const Component = badge.component!;
         return <Component {...badge} />;
     }, { noop: true }),
+
+    setDirectoryBadgeState(badge?: DirectoryBadge, userId?: string, isViewingOtherUser?: boolean) {
+        directoryState = { badge, userId, isViewingOtherUser };
+        return null;
+    },
+
+    renderDirectoryBadgeContent() {
+        const badgeId = typeof directoryState.badge?.badge_id === "string"
+            ? directoryState.badge.badge_id
+            : typeof directoryState.badge?.badge_id === "number"
+                ? String(directoryState.badge.badge_id)
+                : "";
+
+        return (
+            <ErrorBoundary key={badgeId} noop>
+                <BadgeDirectoryDetail
+                    badge={directoryState.badge}
+                    userId={directoryState.userId}
+                    isViewingOtherUser={directoryState.isViewingOtherUser}
+                />
+            </ErrorBoundary>
+        );
+    },
 
     getBadgeMouseEventHandlers(badge: ProfileBadge & BadgeUserArgs) {
         const handlers = {} as Record<string, (e: React.MouseEvent) => void>;
@@ -227,24 +339,37 @@ export default definePlugin({
     },
 
     getDonorBadges(userId: string) {
-        return DonorBadges[userId]?.map((badge, idx) => ({
-            id: `vencord_donor_badge_${idx}`,
-            iconSrc: badge.badge,
-            description: badge.tooltip,
-            position: BadgePosition.START,
-            props: {
-                style: {
-                    borderRadius: "50%",
-                    transform: "scale(0.9)" // The image is a bit too big compared to default badges
-                }
-            },
-            onContextMenu(event, badge) {
-                ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
-            },
-            onClick() {
-                return VencordDonorModal();
-            },
-        } satisfies ProfileBadge));
+        return DonorBadges[userId]?.map((badge, idx) => {
+            let largeIconSrc: string | undefined = undefined;
+            if (badge["2"]) {
+                const url = new URL(badge.badge);
+                url.pathname = url.pathname.replace(/(\.[^/.]+)$/, "@2x$1");
+                largeIconSrc = url.toString();
+            }
+
+            return {
+                id: `vencord_donor_badge_${idx}`,
+                iconSrc: badge.badge,
+                largeIconSrc,
+                description: badge.tooltip,
+                name: badge.tooltip,
+                infoLabel: "Vencord Donor",
+                rarity: BadgeRarity.MYTHIC,
+                position: BadgePosition.START,
+                props: {
+                    style: {
+                        borderRadius: "50%",
+                        transform: "scale(0.9)" // The image is a bit too big compared to default badges
+                    }
+                },
+                onContextMenu(event, badge) {
+                    ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
+                },
+                onClick() {
+                    return VencordDonorModal();
+                },
+            } satisfies ProfileBadge;
+        });
     },
 
     getEquicordDonorBadges(userId: string) {
@@ -252,6 +377,9 @@ export default definePlugin({
             id: `equicord_donor_badge_${idx}`,
             iconSrc: badge.badge,
             description: badge.tooltip,
+            name: badge.tooltip,
+            infoLabel: badge.tooltip === "Equicord Translator" ? "Equicord" : "Equicord Donor",
+            rarity: BadgeRarity.MYTHIC,
             position: BadgePosition.START,
             props: {
                 style: {

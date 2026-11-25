@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { BaseText } from "@components/BaseText";
 import { Card } from "@components/Card";
-import { HeadingPrimary } from "@components/Heading";
+import { Heading } from "@components/Heading";
 import { Paragraph } from "@components/Paragraph";
 import { SettingsTab, wrapTab } from "@components/settings";
+import { Text } from "@components/Text";
 import { classNameFactory } from "@utils/css";
 import { copyWithToast, openUserProfile } from "@utils/discord";
 import { Avatar, Clickable, ContextMenuApi, Menu, React, TextInput, Tooltip, UserStore } from "@webpack/common";
@@ -25,9 +25,9 @@ function tooltipText(user: IStorageUser) {
 
 function UsersCollectionRows({ usersCollection }: { usersCollection: Data["usersCollection"]; }) {
     if (Object.keys(usersCollection).length === 0) return (
-        <BaseText>
+        <Text>
             It's empty right now
-        </BaseText>
+        </Text>
     );
 
     return (
@@ -40,7 +40,7 @@ function UsersCollectionRows({ usersCollection }: { usersCollection: Data["users
                     return (
                         <aside key={key}>
                             <div className={cl("header-container")}>
-                                <HeadingPrimary className={cl("header-name")}>
+                                <Heading tag="h2" className={cl("header-name")}>
                                     {name}
                                     {isGuild && (
                                         <span
@@ -67,7 +67,7 @@ function UsersCollectionRows({ usersCollection }: { usersCollection: Data["users
                                             </Clickable>
                                         </span>
                                     )}
-                                </HeadingPrimary>
+                                </Heading>
                                 <div className={cl("header-btns")}>
                                     {users.map(u => <UserRow key={u.id} user={u} />)}
                                 </div>

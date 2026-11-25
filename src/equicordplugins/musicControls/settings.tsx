@@ -6,12 +6,12 @@
 
 import { definePluginSettings } from "@api/Settings";
 import { disableStyle, enableStyle } from "@api/Styles";
-import { ButtonCompat } from "@components/Button";
-import { HeadingSecondary } from "@components/Heading";
+import { Button } from "@components/Button";
+import { Heading } from "@components/Heading";
+import { Margins } from "@components/margins";
 import { Paragraph } from "@components/Paragraph";
-import { SettingsSection } from "@components/settings/tabs/plugins/components/Common";
 import { makeRange, OptionType } from "@utils/types";
-import { MaskedLink, Select, showToast, TextInput } from "@webpack/common";
+import { MaskedLink, showToast } from "@webpack/common";
 
 import hoverOnlyStyle from "./hoverOnly.css?managed";
 import { clearLyricsCache, removeTranslations } from "./spotify/lyrics/api";
@@ -30,50 +30,11 @@ export function toggleHoverControls(value: boolean) {
 function InstallInstructions() {
     return (
         <section>
-            <HeadingSecondary>How to install</HeadingSecondary>
+            <Heading tag="h3" className={Margins.bottom8}>How to install</Heading>
             <Paragraph>
                 Install <MaskedLink href="https://github.com/Inrixia/TidaLuna#installation">TidaLuna</MaskedLink> from here, then go to TidalLuna settings &rarr; Plugin stores &rarr; Install <code>@vmohammad/api</code>
             </Paragraph>
         </section>
-    );
-}
-
-function LyricsProviderSettings() {
-    return (
-        <>
-            <SettingsSection id="lyrics-provider" name="Lyrics Provider" description="Where lyrics are fetched from.">
-                <Select
-                    options={[
-                        { value: Provider.Lrclib, label: "LRCLIB", default: true },
-                        { value: Provider.Spotify, label: "Spotify (Musixmatch)" },
-                    ]}
-                    isSelected={v => v === settings.store.lyricsProvider}
-                    select={v => { settings.store.lyricsProvider = v as Provider; }}
-                    serialize={v => v}
-                    placeholder="Select a lyrics provider"
-                />
-            </SettingsSection>
-
-            {settings.store.lyricsProvider === Provider.Spotify && (
-                <SettingsSection
-                    id="spotify-lyrics-provider"
-                    name="Spotify Lyrics API Base URL"
-                    description="Custom instance base URL (for example: http://localhost:8080)."
-                >
-                    <TextInput
-                        type="text"
-                        value={settings.store.spotifyLyricsApiUrl}
-                        onChange={v => {
-                            settings.store.spotifyLyricsApiUrl = v;
-                            void clearLyricsCache();
-                            showToast({ text: "Lyrics cache purged", variant: "success" });
-                        }}
-                        placeholder="https://spotify-lyrics-api-pi.vercel.app"
-                        maxLength={null}
-                    />
-                </SettingsSection>
-            )}
-        </>
     );
 }
 
@@ -97,29 +58,6 @@ export const settings = definePluginSettings({
             { value: "below", label: "Below  Player(s)", default: true },
         ],
     },
-    lyricsProvider: {
-        description: "Where lyrics are fetched from",
-        type: OptionType.SELECT,
-        options: [
-            { value: Provider.Lrclib, label: "LRCLIB", default: true },
-            { value: Provider.Spotify, label: "Spotify (Musixmatch)" },
-        ],
-        hidden: true,
-    },
-    spotifyLyricsApiUrl: {
-        type: OptionType.STRING,
-        description: "Spotify lyrics API base URL.",
-        hidden: true,
-        default: "https://spotify-lyrics-api-pi.vercel.app",
-        onChange: async () => {
-            await clearLyricsCache();
-            showToast({ text: "Lyrics cache purged", variant: "success" });
-        }
-    },
-    lyricsProviderSettings: {
-        type: OptionType.COMPONENT,
-        component: LyricsProviderSettings,
-    },
     translateTo: {
         description: "Translate lyrics to - Changing this will clear existing translations",
         type: OptionType.SELECT,
@@ -138,11 +76,6 @@ export const settings = definePluginSettings({
             { value: Provider.Romanized, label: "Romanize" },
         ]
     },
-    fallbackProvider: {
-        description: "When a lyrics provider fails, try other providers",
-        type: OptionType.BOOLEAN,
-        default: true,
-    },
     showFailedToasts: {
         description: "Hide toasts when lyrics fail to fetch",
         type: OptionType.BOOLEAN,
@@ -158,22 +91,22 @@ export const settings = definePluginSettings({
         description: "Purge the lyrics cache",
         type: OptionType.COMPONENT,
         component: () => (
-            <ButtonCompat
-                color={ButtonCompat.Colors.RED}
+            <Button
+                variant="dangerPrimary"
                 onClick={() => {
                     clearLyricsCache();
                     showToast({ text: "Lyrics cache purged", variant: "success" });
                 }}
             >
                 Purge Cache
-            </ButtonCompat>
+            </Button>
         ),
     },
     spotifySectionTitle: {
         type: OptionType.COMPONENT,
         component: () => (
             <section>
-                <HeadingSecondary>Spotify</HeadingSecondary>
+                <Heading tag="h3" className={Margins.bottom8}>Spotify</Heading>
             </section>
         )
     },
@@ -202,7 +135,7 @@ export const settings = definePluginSettings({
         type: OptionType.COMPONENT,
         component: () => (
             <section>
-                <HeadingSecondary>Tidal</HeadingSecondary>
+                <Heading tag="h3" className={Margins.bottom8}>Tidal</Heading>
             </section>
         )
     },

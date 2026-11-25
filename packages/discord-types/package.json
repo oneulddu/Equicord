@@ -1,22 +1,22 @@
 {
     "name": "@equicord/discord-types",
-    "author": "Equicord & Vencord Contributors",
+    "version": "1.15.18",
     "private": false,
     "description": "Typescript definitions for the webpack modules of the Discord Web app",
-    "version": "1.0.5",
     "license": "LGPL-3.0-or-later",
-    "types": "src/index.d.ts",
-    "type": "module",
+    "author": "Equicord & Vencord Contributors",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/Equicord/Equicord.git",
         "directory": "packages/discord-types"
     },
+    "type": "module",
+    "types": "src/index.d.ts",
     "dependencies": {
-        "moment": "2.22.2",
-        "type-fest": "^5.7.0"
+        "moment": "catalog:",
+        "type-fest": "catalog:"
     },
     "peerDependencies": {
-        "@types/react": "19.1.0"
+        "@types/react": "catalog:"
     }
 }

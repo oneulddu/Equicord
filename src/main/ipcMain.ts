@@ -23,7 +23,6 @@ import "./settings";
 import { debounce } from "@shared/debounce";
 import { IpcEvents } from "@shared/IpcEvents";
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell, systemPreferences } from "electron";
-import monacoHtml from "file://monacoWin.html?minify&base64";
 import { FSWatcher, mkdirSync, readFileSync, watch, writeFileSync } from "fs";
 import { open, readdir, readFile, unlink } from "fs/promises";
 import { release } from "os";
@@ -174,9 +173,24 @@ ipcMain.handle(IpcEvents.OPEN_MONACO_EDITOR, async () => {
 
     monacoWin.once("closed", () => { monacoWin = null; });
 
-    makeLinksOpenExternally(monacoWin);
+    // Intercept quit shortcuts so they don't quit the main application
+    monacoWin.webContents.on("before-input-event", (e, input) => {
+        if (input.type !== "keyDown") return;
 
-    await monacoWin.loadURL(`data:text/html;base64,${monacoHtml}`);
+        const key = input.key.toLowerCase();
+        const isQuit = (input.control && !input.alt && !input.shift && key === "q")
+            || (input.alt && !input.control && !input.shift && key === "f4");
+
+        if (isQuit) {
+            e.preventDefault();
+            monacoWin?.close();
+        }
+    });
+
+    makeLinksOpenExternally(monacoWin);
+    monacoWin.webContents.on("will-navigate", e => e.preventDefault());
+
+    await monacoWin.loadURL(DESKTOP_MONACO_EDITOR_URL);
 });
 
 app.on("before-quit", async event => {
